@@ -9,9 +9,9 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import pickle
 
+from project_secrets import * #Load api keys and stuff from file not in git.
 
 
-DEVICE_ID=15695
 '''
 #MINIMUM_DATE='2020-10-01'
 MINIMUM_DATE=None
@@ -83,7 +83,6 @@ app.title = "SmartCitizen Map Dashboard"
 
 app.layout = html.Div([
     html.H2("SmartCitizen Sensor Dashboard", style={"textAlign": "center"}),
-
     html.Div([
         html.Label("Select sensors to display:"),
         dcc.Dropdown(
@@ -93,7 +92,7 @@ app.layout = html.Div([
             multi=True,
             clearable=False
         ),
-    ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
+    ], style={'width': '25%', 'display': 'inline-block', 'padding': '10px'}),
 
     html.Div([
         html.Label("Visualization mode:"),
@@ -106,9 +105,6 @@ app.layout = html.Div([
             value='scatter',
             inline=True
         ),
-    ], style={'width': '40%', 'display': 'inline-block', 'padding': '10px'}),
-
-    html.Div([
         html.Label("Select time range:"),
         dcc.DatePickerRange(
             id='date-picker',
@@ -118,7 +114,8 @@ app.layout = html.Div([
         ),
     ], style={'width': '40%', 'display': 'inline-block', 'padding': '10px'}),
 
-    dcc.Graph(id='map-graph', style={'height': '90'},config={'scrollZoom':True}),
+
+    dcc.Graph(id='map-graph', style={'height': '1400'},config={'scrollZoom':True}),
 ])
 
 # === Callback ===
@@ -138,6 +135,8 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
         return go.Figure()
 
     fig = go.Figure()
+
+    fig.update_mapboxes(accesstoken=MAPBOX_API_KEY)
 
     for sensor in selected_sensors:
         dff_sensor = dff.dropna(subset=[sensor])
@@ -184,9 +183,9 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
     fig.update_layout(
         mapbox=dict(
             #style="open-street-map",
-            style="carto-darkmatter",
+            #style="carto-darkmatter",
             #style="stamen-watercolor",
-            #style="stamen-toner",
+            style="stamen-toner",
             zoom=12,
             center=map_center
         ),

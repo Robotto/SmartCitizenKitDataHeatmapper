@@ -5,7 +5,7 @@ from scdata._config import config
 import asyncio
 import pickle
 
-DEVICE_ID=15695
+from project_secrets import * #Load api keys and stuff from file not in git.
 
 print(f"Getting all data for device #{DEVICE_ID}...")
 

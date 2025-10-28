@@ -25,3 +25,4 @@ timezonefinder~=6.1.9
 urllib3
 boto3
 awswrangler
+dash
