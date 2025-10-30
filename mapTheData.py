@@ -1,6 +1,7 @@
 #import scdata as sc
 #from scdata._config import config
 #import asyncio
+import datetime
 
 import pandas as pd
 import dash
@@ -11,7 +12,17 @@ import pickle
 
 from project_secrets import * #Load api keys and stuff from file not in git.
 
+def loadSavedDataFrame():
+    infile = open(f'SCK_{DEVICE_ID}.pk', 'rb')
+    df = pickle.load(infile)
+    return df
+    pass
+def pullNewData(currentNewestDate):
 
+    #return newDataFrame
+    pass
+def saveDataFrame():
+    pass
 '''
 #MINIMUM_DATE='2020-10-01'
 MINIMUM_DATE=None
@@ -35,8 +46,7 @@ df=device.data
 print(f"plotting data for device #{DEVICE_ID}...")
 
 
-infile = open(f'SCK_{DEVICE_ID}.pk','rb')
-df = pickle.load(infile)
+df = loadSavedDataFrame()
 
 print("Loaded dataframe! Here's the header:")
 print(df.columns.values.tolist()) #Show column titles
@@ -59,7 +69,7 @@ df = df.sort_index()
 
 
 
-#print(df)
+print(f'Timestamp for last entry in loaded data: {df.tail(1).index.strftime('%Y-%m-%d %H:%M:%S')}') #TODO: GET A PROPER DATETIME OBJECT, TO COMPARE
 
 print(f'Dropped {rawCount-df.size} rows. Sorted and dropped dataframe size: {df.size}')
 
