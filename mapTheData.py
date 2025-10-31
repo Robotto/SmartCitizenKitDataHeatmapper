@@ -117,6 +117,11 @@ print(f"Hardcoded lat/lon mean: {center_lat},{center_lon}")
 
 print(f"Calculated lat/lon mean: {center_lat},{center_lon}")
 
+print("Click here: http://127.0.0.1:8050/")
+
+
+
+
 # === Initialize Dash App ===
 app = dash.Dash(__name__)
 app.title = "SmartCitizen Map Dashboard"
@@ -150,7 +155,7 @@ app.layout = html.Div([
             html.Label("Select time range:"),
             dcc.DatePickerRange(
                 id='date-picker',
-                start_date=df.index.min().date(),
+                start_date=(df.index.max().date()+datetime.timedelta(days=-1)),
                 end_date=df.index.max().date(),
                 display_format='YYYY-MM-DD',
             ),
@@ -204,7 +209,7 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
                 **common_kwargs,
                 mode='markers',
                 marker=go.scattermapbox.Marker(
-                    size=8,
+                    size=20,
                     color=dff_sensor[sensor]
                 ),
                 text=[
@@ -243,6 +248,7 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
     )
 
     return fig
+
 
 
 if __name__ == '__main__':
