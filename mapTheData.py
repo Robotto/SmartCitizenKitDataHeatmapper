@@ -186,7 +186,7 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
         return go.Figure()
 
     fig = go.Figure()
-    fig.update_mapboxes(accesstoken=MAPBOX_API_KEY)
+    #fig.update_mapboxes(accesstoken=MAPBOX_API_KEY)
 
     # --- Add traces with offset colorbars ---
     for i, sensor in enumerate(selected_sensors):
@@ -205,10 +205,10 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
         )
 
         if map_mode == 'scatter':
-            fig.add_trace(go.Scattermapbox(
+            fig.add_trace(go.Scattermap(
                 **common_kwargs,
                 mode='markers',
-                marker=go.scattermapbox.Marker(
+                marker=go.scattermap.Marker(
                     size=20,
                     color=dff_sensor[sensor]
                 ),
@@ -219,7 +219,7 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
                 hoverinfo='text',
             ))
         else:  # heatmap mode
-            fig.add_trace(go.Densitymapbox(
+            fig.add_trace(go.Densitymap(
                 **common_kwargs,
                  colorscale='Viridis',
             showscale=True,
@@ -235,11 +235,11 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
     }
 
     fig.update_layout(
-        mapbox=dict(
+        map=dict(
             #style="open-street-map",
-            #style="carto-darkmatter",
+            style="carto-darkmatter",
             #style="stamen-watercolor",
-            style="stamen-toner",
+            #style="stamen-toner",
             zoom=15,
             center=map_center
         ),
