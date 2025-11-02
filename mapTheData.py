@@ -141,7 +141,7 @@ app.layout = html.Div([
                 multi=True,
                 clearable=False
             ),
-        ], style={'width': '25%'}),
+        ], style={'width': '20%'}),
 
         html.Div([
             html.Label("Visualization mode:"),
@@ -154,6 +154,26 @@ app.layout = html.Div([
                 value='heatmap',
                 inline=True
             ),
+            html.Label("Map style:"),
+            dcc.RadioItems(
+                ## TODO: https://plotly.com/python/tile-map-layers/#stamen-watercolor-using-a-custom-style-url
+                ## https://plotly.com/python/tile-map-layers/#base-maps-in-layoutmapstyle   
+                #https://services.datafordeler.dk/DKskaermkort/topo_skaermkort_daempet/1.0.0/wmts?username=ZAKGYIPEPH&password=gh83d82GFG0hdh*&layer=topo_skaermkort_daempet&style=default&tilematrixset=View1&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix=4&TileCol=15&TileRow=12
+                #https://services.datafordeler.dk/DKskaermkort/topo_skaermkort_daempet/1.0.0/wmts?username=ZAKGYIPEPH&password=gh83d82GFG0hdh*&layer=topo_skaermkort_daempet&style=default&tilematrixset=View1&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix={z}&TileCol={x}&TileRow={y}
+                id='map-style',
+                options=[
+                    {'label': 'OSM', 'value': 'open-street-map'},
+                    {'label': 'carto-darkmatter', 'value': 'carto-darkmatter'},
+                    {'label': 'SAT', 'value': 'satellite'},
+                    {'label': 'ALIDADE SMOOTH', 'value': 'https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API},
+                    {'label': 'Stamen Watercolour', 'value': 'https://tiles.stadiamaps.com/styles/stamen_watercolor.json?api_key='+STADIA_API},
+                    {'label': 'Stamen Toner', 'value': 'https://tiles.stadiamaps.com/styles/stamen_toner.json?api_key='+STADIA_API},
+                    {'label': 'Stamen Terrain', 'value': 'https://tiles.stadiamaps.com/styles/stamen_terrain.json?api_key='+STADIA_API},
+                    {'label': 'DATAFORDELER', 'value': 'https://services.datafordeler.dk/DKskaermkort/topo_skaermkort_daempet/1.0.0/wmts?username=ZAKGYIPEPH&password=gh83d82GFG0hdh*&layer=topo_skaermkort_daempet&style=default&tilematrixset=View1&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix={z}&TileCol={x}&TileRow={y}'},
+                ],
+                value='https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API,
+                inline=True
+            ),
             html.Label("Select time range:"),
             dcc.DatePickerRange(
                 id='date-picker',
@@ -161,7 +181,8 @@ app.layout = html.Div([
                 end_date=df.index.max().date(),
                 display_format='YYYY-MM-DD',
             ),
-        ], style={'width': '70%'}),
+
+        ], style={'width': '80%'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between', 'padding': '10px'}),
 
     html.Div([
@@ -175,11 +196,13 @@ app.layout = html.Div([
     Output('map-graph', 'figure'),
     Input('sensor-dropdown', 'value'),
     Input('map-mode', 'value'),
+    Input('map-style', 'value'),
     Input('date-picker', 'start_date'),
     Input('date-picker', 'end_date')
 )
 
-def update_map(selected_sensors, map_mode, start_date, end_date):
+def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
+
     # Filter time range using index
     mask = (df.index >= start_date) & (df.index <= end_date)
     dff = df.loc[mask]
@@ -242,9 +265,13 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
         'lon': center_lon
     }
 
+
+
     fig.update_layout(
         map=dict(
-            style="open-street-map",
+            style=str(map_style),
+            #style="open-street-map",
+            #style=f'https://tiles.stadiamaps.com/styles/stamen_watercolor.json?api_key={STADIA_API}',
             #style="carto-darkmatter",
             #style="stamen-watercolor",
             #style="stamen-toner",
