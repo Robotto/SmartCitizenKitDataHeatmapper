@@ -8,6 +8,8 @@ import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
+import plotly.express as px
+
 import pickle
 
 from project_secrets import * #Load api keys and stuff from file not in git.
@@ -135,7 +137,7 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='sensor-dropdown',
                 options=[{'label': col, 'value': col} for col in sensor_columns],
-                value=['PMS5003_PM_25'],
+                value=['PMS5003_PM_1','PMS5003_PM_10','PMS5003_PM_25',],
                 multi=True,
                 clearable=False
             ),
@@ -146,10 +148,10 @@ app.layout = html.Div([
             dcc.RadioItems(
                 id='map-mode',
                 options=[
+                    {'label': 'Heatmap', 'value': 'heatmap'},
                     {'label': 'Scatter Map', 'value': 'scatter'},
-                    {'label': 'Heatmap', 'value': 'heatmap'}
                 ],
-                value='scatter',
+                value='heatmap',
                 inline=True
             ),
             html.Label("Select time range:"),
@@ -204,13 +206,17 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
             name=sensor,
         )
 
+#TODO: I'd love for the scatterplot to colorscale the dots according to data values... like in the densitymap.
+
         if map_mode == 'scatter':
             fig.add_trace(go.Scattermap(
                 **common_kwargs,
                 mode='markers',
+                showlegend=True,
                 marker=go.scattermap.Marker(
                     size=20,
-                    color=dff_sensor[sensor]
+                    colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
+                    #color=dff_sensor[sensor]
                 ),
                 text=[
                     f"{sensor}: {v:.2f}<br>{i}"
@@ -221,11 +227,13 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
         else:  # heatmap mode
             fig.add_trace(go.Densitymap(
                 **common_kwargs,
-                 colorscale='Viridis',
-            showscale=True,
-            colorbar=dict(title=sensor, x=colorbar_x),                 
+                 #colorscale='Viridis',
+                colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
+                showscale=True,
+                colorbar=dict(title=sensor, x=colorbar_x),                 
                 z=dff_sensor[sensor],
-                radius=20
+                radius=25,
+                hoverinfo='all',
             ))
 
     # Determine map center dynamically
@@ -236,8 +244,8 @@ def update_map(selected_sensors, map_mode, start_date, end_date):
 
     fig.update_layout(
         map=dict(
-            #style="open-street-map",
-            style="carto-darkmatter",
+            style="open-street-map",
+            #style="carto-darkmatter",
             #style="stamen-watercolor",
             #style="stamen-toner",
             zoom=15,
