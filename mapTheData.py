@@ -165,12 +165,14 @@ app.layout = html.Div([
                     {'label': 'OSM', 'value': 'open-street-map'},
                     {'label': 'carto-darkmatter', 'value': 'carto-darkmatter'},
                     {'label': 'SAT', 'value': 'satellite'},
-                    {'label': 'ALIDADE SMOOTH', 'value': 'https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API},
+                    {'label': 'Alidade Smooth', 'value': 'https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API},
+                    {'label': 'Alidade Smooth Dark', 'value': 'https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key='+STADIA_API},
+                    {'label': 'Outdoors', 'value': 'https://tiles.stadiamaps.com/styles/outdoors.json?api_key='+STADIA_API},
                     {'label': 'Stamen Watercolour', 'value': 'https://tiles.stadiamaps.com/styles/stamen_watercolor.json?api_key='+STADIA_API},
                     {'label': 'Stamen Toner', 'value': 'https://tiles.stadiamaps.com/styles/stamen_toner.json?api_key='+STADIA_API},
                     {'label': 'Stamen Terrain', 'value': 'https://tiles.stadiamaps.com/styles/stamen_terrain.json?api_key='+STADIA_API},
                 ],
-                value='https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API,
+                value='https://tiles.stadiamaps.com/styles/stamen_terrain.json?api_key='+STADIA_API,
                 inline=True
             ),
             html.Label("Select time range:"),
@@ -250,7 +252,8 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
             fig.add_trace(go.Densitymap(
                 **common_kwargs,
                  #colorscale='Viridis',
-                colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
+#                colorscale = px.colors.named_colorscales()[i+3]+'_r', #append _r to the name of the color scale to reverse it
+                colorscale = px.colors.named_colorscales()[i+3], #append _r to the name of the color scale to reverse it
                 showscale=True,
                 colorbar=dict(title=sensor, x=colorbar_x),                 
                 z=dff_sensor[sensor],
@@ -270,10 +273,6 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
         map=dict(
             style=str(map_style),
             #style="open-street-map",
-            #style=f'https://tiles.stadiamaps.com/styles/stamen_watercolor.json?api_key={STADIA_API}',
-            #style="carto-darkmatter",
-            #style="stamen-watercolor",
-            #style="stamen-toner",
             zoom=15,
             center=map_center
         ),
@@ -290,73 +289,3 @@ if __name__ == '__main__':
 
 
 
-'''
-def update_map(selected_sensors, map_mode, start_date, end_date):
-    # Filter time range using index
-    mask = (df.index >= start_date) & (df.index <= end_date)
-    dff = df.loc[mask]
-
-    if dff.empty:
-        return go.Figure()
-
-    fig = go.Figure()
-
-    fig.update_mapboxes(accesstoken=MAPBOX_API_KEY)
-
-    for sensor in selected_sensors:
-        dff_sensor = dff.dropna(subset=[sensor])
-        if dff_sensor.empty:
-            continue
-
-        if map_mode == 'scatter':
-            fig.add_trace(go.Scattermapbox(
-                lat=dff_sensor['GPS_LAT'],
-                lon=dff_sensor['GPS_LONG'],
-                mode='markers',
-                marker=go.scattermapbox.Marker(
-                    size=8,
-                    color=dff_sensor[sensor],
-                    colorscale='Viridis',
-                    showscale=True,
-                    colorbar=dict(title=sensor)
-                ),
-                text=[
-                    f"{sensor}: {v:.2f}<br>{i}"
-                    for v, i in zip(dff_sensor[sensor], dff_sensor.index)
-                ],
-                hoverinfo='text',
-                name=sensor
-            ))
-        else:  # heatmap mode
-            fig.add_trace(go.Densitymapbox(
-                lat=dff_sensor['GPS_LAT'],
-                lon=dff_sensor['GPS_LONG'],
-                z=dff_sensor[sensor],
-                radius=20,
-                colorscale='Viridis',
-                showscale=True,
-                name=sensor,
-                colorbar=dict(title=sensor)
-            ))
-
-    # Determine map center dynamically from filtered data
-    map_center = {
-        'lat': center_lat, #dff['GPS_LAT'].mean() if not dff['GPS_LAT'].empty else center_lat,
-        'lon': center_lon #dff['GPS_LONG'].mean() if not dff['GPS_LONG'].empty else center_lon
-    }
-
-    fig.update_layout(
-        mapbox=dict(
-            #style="open-street-map",
-            #style="carto-darkmatter",
-            style="stamen-watercolor",
-            #style="stamen-toner",
-            zoom=15,
-            center=map_center
-        ),
-        margin={"r": 0, "t": 40, "l": 0, "b": 0},
-        title=f"{map_mode.capitalize()} view for {', '.join(selected_sensors)}"
-    )
-
-    return fig
-'''
