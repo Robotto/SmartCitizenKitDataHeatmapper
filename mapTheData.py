@@ -137,7 +137,7 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='sensor-dropdown',
                 options=[{'label': col, 'value': col} for col in sensor_columns],
-                value=['PMS5003_PM_1','PMS5003_PM_10','PMS5003_PM_25',],
+                value=['PMS5003_PM_25','PMS5003_PM_10','PMS5003_PM_1',],
                 multi=True,
                 clearable=False
             ),
