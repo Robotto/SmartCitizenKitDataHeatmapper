@@ -169,7 +169,6 @@ app.layout = html.Div([
                     {'label': 'Stamen Watercolour', 'value': 'https://tiles.stadiamaps.com/styles/stamen_watercolor.json?api_key='+STADIA_API},
                     {'label': 'Stamen Toner', 'value': 'https://tiles.stadiamaps.com/styles/stamen_toner.json?api_key='+STADIA_API},
                     {'label': 'Stamen Terrain', 'value': 'https://tiles.stadiamaps.com/styles/stamen_terrain.json?api_key='+STADIA_API},
-                    {'label': 'DATAFORDELER', 'value': 'https://services.datafordeler.dk/DKskaermkort/topo_skaermkort_daempet/1.0.0/wmts?username=ZAKGYIPEPH&password=gh83d82GFG0hdh*&layer=topo_skaermkort_daempet&style=default&tilematrixset=View1&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix={z}&TileCol={x}&TileRow={y}'},
                 ],
                 value='https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API,
                 inline=True
