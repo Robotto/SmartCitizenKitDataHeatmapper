@@ -26,3 +26,5 @@ urllib3
 boto3
 awswrangler
 dash
+scdata
+flask_cors
