@@ -10,8 +10,6 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import plotly.express as px
 
-from flask_cors import CORS
-
 import pickle
 
 from project_secrets import * #Load api keys and stuff from file not in git.
@@ -61,7 +59,7 @@ def pullNewData(df):
 
         # Device id needs to be as str
     device = sc.Device(blueprint='sc_air', params=sc.APIParams(id=DEVICE_ID))
-    device.options.min_date = MINIMUM_DATE
+    device.options.min_date = MINIMUM_DATE #Don't trim min_date
     device.options.max_date = None #Don't trim max_date
     #device.options.frequency = '1Min' # Use this to change the sample frequency for the request
     #print (device.json)
@@ -86,7 +84,6 @@ def saveDataFrame(df):
     pickle.dump(df, outfile)
     outfile.close()
     
-
 print(f"plotting data for device #{DEVICE_ID}...")
 
 dataCount=0
@@ -117,19 +114,22 @@ center_lon = 10.1878436#df['GPS_LONG'].mean()
 
 print(f"Hardcoded lat/lon mean: {center_lat},{center_lon}")
 
-center_lat = df['GPS_LAT'].mean()
-center_lon = df['GPS_LONG'].mean()
+center_LATITUDE = df['GPS_LAT'].mean()
+center_LONGITUDE = df['GPS_LONG'].mean()
+min_LATITUDE = df['GPS_LAT'].min()
+min_LONGITUDE = df['GPS_LONG'].min()
+max_LATITUDE = df['GPS_LAT'].max()
+max_LONGITUDE = df['GPS_LONG'].max()
 
-print(f"Calculated lat/lon mean: {center_lat},{center_lon}")
+print(f"data lat/lon info: Center: {center_LATITUDE},{center_LONGITUDE}, min: {min_LATITUDE},{min_LONGITUDE}, max: {max_LATITUDE},{max_LONGITUDE}")
 
 print("Click here: http://127.0.0.1:8050/")
 
 
 
+
 # === Initialize Dash App ===
 app = dash.Dash(__name__)
-server = app.server
-CORS(server)
 app.title = "SmartCitizen Map Dashboard"
 
 app.layout = html.Div([
@@ -141,8 +141,7 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='sensor-dropdown',
                 options=[{'label': col, 'value': col} for col in sensor_columns],
-                value=['PMS5003_PM_25',],
-#                value=['PMS5003_PM_25','PMS5003_PM_10','PMS5003_PM_1',],
+                value=['PMS5003_PM_1','PMS5003_PM_10','PMS5003_PM_25',],
                 multi=True,
                 clearable=False
             ),
@@ -161,27 +160,26 @@ app.layout = html.Div([
             ),
             html.Label("Map style:"),
             dcc.RadioItems(
-                ## TODONE: https://plotly.com/python/tile-map-layers/#stamen-watercolor-using-a-custom-style-url
+                ## TODO: https://plotly.com/python/tile-map-layers/#stamen-watercolor-using-a-custom-style-url
                 ## https://plotly.com/python/tile-map-layers/#base-maps-in-layoutmapstyle   
+                
                 id='map-style',
                 options=[
                     {'label': 'OSM', 'value': 'open-street-map'},
                     {'label': 'carto-darkmatter', 'value': 'carto-darkmatter'},
                     {'label': 'SAT', 'value': 'satellite'},
-                    {'label': 'Alidade Smooth', 'value': 'https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API},
-                    {'label': 'Alidade Smooth Dark', 'value': 'https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key='+STADIA_API},
-                    {'label': 'Outdoors', 'value': 'https://tiles.stadiamaps.com/styles/outdoors.json?api_key='+STADIA_API},
+                    {'label': 'ALIDADE SMOOTH', 'value': 'https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API},
                     {'label': 'Stamen Watercolour', 'value': 'https://tiles.stadiamaps.com/styles/stamen_watercolor.json?api_key='+STADIA_API},
                     {'label': 'Stamen Toner', 'value': 'https://tiles.stadiamaps.com/styles/stamen_toner.json?api_key='+STADIA_API},
                     {'label': 'Stamen Terrain', 'value': 'https://tiles.stadiamaps.com/styles/stamen_terrain.json?api_key='+STADIA_API},
                 ],
-                value='https://tiles.stadiamaps.com/styles/stamen_terrain.json?api_key='+STADIA_API,
+                value='https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key='+STADIA_API,
                 inline=True
             ),
             html.Label("Select time range:"),
             dcc.DatePickerRange(
                 id='date-picker',
-                start_date=(df.index.max().date()+datetime.timedelta(days=-3)),
+                start_date=(df.index.max().date()+datetime.timedelta(days=-1)),
                 end_date=df.index.max().date(),
                 display_format='YYYY-MM-DD',
             ),
@@ -205,19 +203,14 @@ app.layout = html.Div([
     Input('date-picker', 'end_date')
 )
 
-#@app.after_request
-#def after_request(response):
-#	response.headers.add('Access-Control-Allow-Origin', '*')
-#	response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-#	respone.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-#	return response
-
-
 def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
 
     # Filter time range using index
     mask = (df.index >= start_date) & (df.index <= end_date)
     dff = df.loc[mask]
+
+    center_lat = dff['GPS_LAT'].mean()
+    center_lon = dff['GPS_LONG'].mean()
 
     if dff.empty:
         return go.Figure()
@@ -263,8 +256,7 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
             fig.add_trace(go.Densitymap(
                 **common_kwargs,
                  #colorscale='Viridis',
-#                colorscale = px.colors.named_colorscales()[i+3]+'_r', #append _r to the name of the color scale to reverse it
-                colorscale = px.colors.named_colorscales()[i+3], #append _r to the name of the color scale to reverse it
+                colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
                 showscale=True,
                 colorbar=dict(title=sensor, x=colorbar_x),                 
                 z=dff_sensor[sensor],
@@ -284,6 +276,10 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
         map=dict(
             style=str(map_style),
             #style="open-street-map",
+            #style=f'https://tiles.stadiamaps.com/styles/stamen_watercolor.json?api_key={STADIA_API}',
+            #style="carto-darkmatter",
+            #style="stamen-watercolor",
+            #style="stamen-toner",
             zoom=15,
             center=map_center
         ),
@@ -297,7 +293,76 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
 
 if __name__ == '__main__':
     app.run(debug=True)
-#	CORS(app)
 
 
 
+'''
+def update_map(selected_sensors, map_mode, start_date, end_date):
+    # Filter time range using index
+    mask = (df.index >= start_date) & (df.index <= end_date)
+    dff = df.loc[mask]
+
+    if dff.empty:
+        return go.Figure()
+
+    fig = go.Figure()
+
+    fig.update_mapboxes(accesstoken=MAPBOX_API_KEY)
+
+    for sensor in selected_sensors:
+        dff_sensor = dff.dropna(subset=[sensor])
+        if dff_sensor.empty:
+            continue
+
+        if map_mode == 'scatter':
+            fig.add_trace(go.Scattermapbox(
+                lat=dff_sensor['GPS_LAT'],
+                lon=dff_sensor['GPS_LONG'],
+                mode='markers',
+                marker=go.scattermapbox.Marker(
+                    size=8,
+                    color=dff_sensor[sensor],
+                    colorscale='Viridis',
+                    showscale=True,
+                    colorbar=dict(title=sensor)
+                ),
+                text=[
+                    f"{sensor}: {v:.2f}<br>{i}"
+                    for v, i in zip(dff_sensor[sensor], dff_sensor.index)
+                ],
+                hoverinfo='text',
+                name=sensor
+            ))
+        else:  # heatmap mode
+            fig.add_trace(go.Densitymapbox(
+                lat=dff_sensor['GPS_LAT'],
+                lon=dff_sensor['GPS_LONG'],
+                z=dff_sensor[sensor],
+                radius=20,
+                colorscale='Viridis',
+                showscale=True,
+                name=sensor,
+                colorbar=dict(title=sensor)
+            ))
+
+    # Determine map center dynamically from filtered data
+    map_center = {
+        'lat': center_lat, #dff['GPS_LAT'].mean() if not dff['GPS_LAT'].empty else center_lat,
+        'lon': center_lon #dff['GPS_LONG'].mean() if not dff['GPS_LONG'].empty else center_lon
+    }
+
+    fig.update_layout(
+        mapbox=dict(
+            #style="open-street-map",
+            #style="carto-darkmatter",
+            style="stamen-watercolor",
+            #style="stamen-toner",
+            zoom=15,
+            center=map_center
+        ),
+        margin={"r": 0, "t": 40, "l": 0, "b": 0},
+        title=f"{map_mode.capitalize()} view for {', '.join(selected_sensors)}"
+    )
+
+    return fig
+'''
