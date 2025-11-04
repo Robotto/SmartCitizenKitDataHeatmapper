@@ -10,6 +10,8 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import plotly.express as px
 
+from flask_cors import CORS
+
 import pickle
 
 from project_secrets import * #Load api keys and stuff from file not in git.
@@ -59,7 +61,7 @@ def pullNewData(df):
 
         # Device id needs to be as str
     device = sc.Device(blueprint='sc_air', params=sc.APIParams(id=DEVICE_ID))
-    device.options.min_date = MINIMUM_DATE #Don't trim min_date
+    device.options.min_date = MINIMUM_DATE
     device.options.max_date = None #Don't trim max_date
     #device.options.frequency = '1Min' # Use this to change the sample frequency for the request
     #print (device.json)
@@ -84,6 +86,7 @@ def saveDataFrame(df):
     pickle.dump(df, outfile)
     outfile.close()
     
+
 print(f"plotting data for device #{DEVICE_ID}...")
 
 dataCount=0
@@ -114,8 +117,8 @@ center_lon = 10.1878436#df['GPS_LONG'].mean()
 
 print(f"Hardcoded lat/lon mean: {center_lat},{center_lon}")
 
-#center_lat = df['GPS_LAT'].mean()
-#center_lon = df['GPS_LONG'].mean()
+center_lat = df['GPS_LAT'].mean()
+center_lon = df['GPS_LONG'].mean()
 
 print(f"Calculated lat/lon mean: {center_lat},{center_lon}")
 
@@ -123,9 +126,10 @@ print("Click here: http://127.0.0.1:8050/")
 
 
 
-
 # === Initialize Dash App ===
 app = dash.Dash(__name__)
+server = app.server
+CORS(server)
 app.title = "SmartCitizen Map Dashboard"
 
 app.layout = html.Div([
@@ -137,7 +141,8 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='sensor-dropdown',
                 options=[{'label': col, 'value': col} for col in sensor_columns],
-                value=['PMS5003_PM_25','PMS5003_PM_10','PMS5003_PM_1',],
+                value=['PMS5003_PM_25',],
+#                value=['PMS5003_PM_25','PMS5003_PM_10','PMS5003_PM_1',],
                 multi=True,
                 clearable=False
             ),
@@ -156,10 +161,8 @@ app.layout = html.Div([
             ),
             html.Label("Map style:"),
             dcc.RadioItems(
-                ## TODO: https://plotly.com/python/tile-map-layers/#stamen-watercolor-using-a-custom-style-url
+                ## TODONE: https://plotly.com/python/tile-map-layers/#stamen-watercolor-using-a-custom-style-url
                 ## https://plotly.com/python/tile-map-layers/#base-maps-in-layoutmapstyle   
-                #https://services.datafordeler.dk/DKskaermkort/topo_skaermkort_daempet/1.0.0/wmts?username=ZAKGYIPEPH&password=gh83d82GFG0hdh*&layer=topo_skaermkort_daempet&style=default&tilematrixset=View1&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix=4&TileCol=15&TileRow=12
-                #https://services.datafordeler.dk/DKskaermkort/topo_skaermkort_daempet/1.0.0/wmts?username=ZAKGYIPEPH&password=gh83d82GFG0hdh*&layer=topo_skaermkort_daempet&style=default&tilematrixset=View1&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix={z}&TileCol={x}&TileRow={y}
                 id='map-style',
                 options=[
                     {'label': 'OSM', 'value': 'open-street-map'},
@@ -178,7 +181,7 @@ app.layout = html.Div([
             html.Label("Select time range:"),
             dcc.DatePickerRange(
                 id='date-picker',
-                start_date=(df.index.max().date()+datetime.timedelta(days=-1)),
+                start_date=(df.index.max().date()+datetime.timedelta(days=-3)),
                 end_date=df.index.max().date(),
                 display_format='YYYY-MM-DD',
             ),
@@ -201,6 +204,14 @@ app.layout = html.Div([
     Input('date-picker', 'start_date'),
     Input('date-picker', 'end_date')
 )
+
+#@app.after_request
+#def after_request(response):
+#	response.headers.add('Access-Control-Allow-Origin', '*')
+#	response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+#	respone.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+#	return response
+
 
 def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
 
@@ -286,6 +297,7 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
 
 if __name__ == '__main__':
     app.run(debug=True)
+#	CORS(app)
 
 
 
