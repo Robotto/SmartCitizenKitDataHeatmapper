@@ -23,7 +23,8 @@ def scrubData(df):
     # Drop rows without GPS coordinates/fix indication
     df = df.dropna(subset=['GPS_LAT', 'GPS_LONG', 'GPS_FIX'])
 
-    df = df[df['GPS_FIX'] > 0] #Lower for more, but less locationally accurate data.
+    df = df[df['GPS_FIX'] > 2] #Lower for more, but less locationally accurate data.
+    df = df[df['GPS_LAT'] > 50] #Lower for more, but less locationally accurate data.
 
     print(f'Scrubbed {rawCount-df.size} rows. Sorted and dropped dataframe size: {df.size}')
 
@@ -42,7 +43,7 @@ def loadSavedDataFrame():
     print(df.columns.values.tolist()) #Show column titles
     rawCount=df.size
     print(f'Raw dataframe size: {rawCount}')
-    return df
+    return scrubData(df)
     
 def pullNewData(df):
     MINIMUM_DATE = None
@@ -208,7 +209,7 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
     # Filter time range using index
     mask = (df.index >= start_date) & (df.index <= end_date)
     dff = df.loc[mask]
-
+    print(f'displaying data from {start_date} to {end_date}')
     center_lat = dff['GPS_LAT'].mean()
     center_lon = dff['GPS_LONG'].mean()
 
