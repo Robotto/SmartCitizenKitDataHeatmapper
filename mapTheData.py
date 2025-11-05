@@ -5,7 +5,7 @@ import datetime
 
 import pandas as pd
 import dash
-from dash import dcc, html
+from dash import dcc, html, ctx
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import plotly.express as px
@@ -46,6 +46,7 @@ def loadSavedDataFrame():
     return scrubData(df)
     
 def pullNewData(df):
+    #return df
     MINIMUM_DATE = None
     rawCount = 0
     if df is not None:
@@ -96,7 +97,7 @@ except:
     df = None
 
 
-df = pullNewData(df)
+#df = pullNewData(df)
 dataCountDelta = df.size-dataCount
 
 if dataCountDelta>0:
@@ -124,7 +125,7 @@ max_LONGITUDE = df['GPS_LONG'].max()
 
 print(f"data lat/lon info: Center: {center_LATITUDE},{center_LONGITUDE}, min: {min_LATITUDE},{min_LONGITUDE}, max: {max_LATITUDE},{max_LONGITUDE}")
 
-print("Click here: http://127.0.0.1:8050/")
+print("Click here: https://127.0.0.1:8050/ or here: https://data.moore.dk")
 
 
 
@@ -180,12 +181,13 @@ app.layout = html.Div([
             html.Label("Select time range:"),
             dcc.DatePickerRange(
                 id='date-picker',
-                start_date=(df.index.max().date()+datetime.timedelta(days=-1)),
+                start_date=df.index.max().date()+datetime.timedelta(days=-1),
                 end_date=df.index.max().date(),
                 display_format='YYYY-MM-DD',
             ),
 
         ], style={'width': '80%'}),
+html.Div([html.Label(f'Freshest data is from: {list(df.tail(1).index.strftime('%Y-%m-%d %H:%M:%S'))[0]}'), html.Button('PULL NEW DATA FROM API', id='pull_data_button', n_clicks=0), ],style={'flexGrow': 1}),
     ], style={'display': 'flex', 'justifyContent': 'space-between', 'padding': '10px'}),
 
     html.Div([
@@ -201,15 +203,20 @@ app.layout = html.Div([
     Input('map-mode', 'value'),
     Input('map-style', 'value'),
     Input('date-picker', 'start_date'),
-    Input('date-picker', 'end_date')
+    Input('date-picker', 'end_date'),
+    Input('pull_data_button', 'n_clicks'),
 )
 
-def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
+def update_map(selected_sensors, map_mode, map_style, start_date, end_date, n_clicks): #Not using number of clicks, but we want to know the button ID...
+    global df
+    if "pull_data_button" == ctx.triggered_id:
+        print("BUTTON WAS CLICKED")
+        df = pullNewData(df)
 
     # Filter time range using index
-    mask = (df.index >= start_date) & (df.index <= end_date)
+    mask = (df.index >= start_date) & (df.index <= end_date + " 23:59:59")
     dff = df.loc[mask]
-    print(f'displaying data from {start_date} to {end_date}')
+    print(f'displaying data from {start_date} to {end_date + " 23:59:59"}')
     center_lat = dff['GPS_LAT'].mean()
     center_lon = dff['GPS_LONG'].mean()
 
@@ -225,8 +232,9 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
         if dff_sensor.empty:
             continue
 
-        # Colorbar offset (shift each bar a bit right)
+        # Colorbar offset (shift each bar a bit right and down)
         colorbar_x = 1.02 + 0.05 * i
+        colorbar_y = 0.5 - 0.02 * i
 
         common_kwargs = dict(
             lat=dff_sensor['GPS_LAT'],
@@ -244,7 +252,8 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
                 showlegend=True,
                 marker=go.scattermap.Marker(
                     size=20,
-                    colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
+#                    colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
+                    colorscale = px.colors.named_colorscales()[i], #append _r to the name of the color scale to reverse it
                     #color=dff_sensor[sensor]
                 ),
                 text=[
@@ -257,9 +266,10 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
             fig.add_trace(go.Densitymap(
                 **common_kwargs,
                  #colorscale='Viridis',
-                colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
+                #colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
+                colorscale = px.colors.named_colorscales()[i], #append _r to the name of the color scale to reverse it
                 showscale=True,
-                colorbar=dict(title=sensor, x=colorbar_x),                 
+                colorbar=dict(title=sensor, x=colorbar_x, y=colorbar_y),
                 z=dff_sensor[sensor],
                 radius=25,
                 hoverinfo='all',
@@ -274,6 +284,7 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date):
 
 
     fig.update_layout(
+
         map=dict(
             style=str(map_style),
             #style="open-street-map",
@@ -297,73 +308,3 @@ if __name__ == '__main__':
 
 
 
-'''
-def update_map(selected_sensors, map_mode, start_date, end_date):
-    # Filter time range using index
-    mask = (df.index >= start_date) & (df.index <= end_date)
-    dff = df.loc[mask]
-
-    if dff.empty:
-        return go.Figure()
-
-    fig = go.Figure()
-
-    fig.update_mapboxes(accesstoken=MAPBOX_API_KEY)
-
-    for sensor in selected_sensors:
-        dff_sensor = dff.dropna(subset=[sensor])
-        if dff_sensor.empty:
-            continue
-
-        if map_mode == 'scatter':
-            fig.add_trace(go.Scattermapbox(
-                lat=dff_sensor['GPS_LAT'],
-                lon=dff_sensor['GPS_LONG'],
-                mode='markers',
-                marker=go.scattermapbox.Marker(
-                    size=8,
-                    color=dff_sensor[sensor],
-                    colorscale='Viridis',
-                    showscale=True,
-                    colorbar=dict(title=sensor)
-                ),
-                text=[
-                    f"{sensor}: {v:.2f}<br>{i}"
-                    for v, i in zip(dff_sensor[sensor], dff_sensor.index)
-                ],
-                hoverinfo='text',
-                name=sensor
-            ))
-        else:  # heatmap mode
-            fig.add_trace(go.Densitymapbox(
-                lat=dff_sensor['GPS_LAT'],
-                lon=dff_sensor['GPS_LONG'],
-                z=dff_sensor[sensor],
-                radius=20,
-                colorscale='Viridis',
-                showscale=True,
-                name=sensor,
-                colorbar=dict(title=sensor)
-            ))
-
-    # Determine map center dynamically from filtered data
-    map_center = {
-        'lat': center_lat, #dff['GPS_LAT'].mean() if not dff['GPS_LAT'].empty else center_lat,
-        'lon': center_lon #dff['GPS_LONG'].mean() if not dff['GPS_LONG'].empty else center_lon
-    }
-
-    fig.update_layout(
-        mapbox=dict(
-            #style="open-street-map",
-            #style="carto-darkmatter",
-            style="stamen-watercolor",
-            #style="stamen-toner",
-            zoom=15,
-            center=map_center
-        ),
-        margin={"r": 0, "t": 40, "l": 0, "b": 0},
-        title=f"{map_mode.capitalize()} view for {', '.join(selected_sensors)}"
-    )
-
-    return fig
-'''
