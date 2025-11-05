@@ -1,3 +1,4 @@
+import random
 import scdata as sc
 from scdata._config import config
 import asyncio
@@ -237,8 +238,8 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date, n_cl
         colorbar_y = 0.5 - 0.02 * i
 
         common_kwargs = dict(
-            lat=dff_sensor['GPS_LAT'],
-            lon=dff_sensor['GPS_LONG'],
+            lat=dff_sensor['GPS_LAT']+0.0001*(random.random()-0.5), #Add a bit of jitter to points so multiple sensor data don't occlude
+            lon=dff_sensor['GPS_LONG']+0.0001*(random.random()-0.5),
            
             name=sensor,
         )
