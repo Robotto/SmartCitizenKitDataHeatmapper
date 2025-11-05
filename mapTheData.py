@@ -187,7 +187,7 @@ app.layout = html.Div([
             ),
 
         ], style={'width': '80%'}),
-html.Div([html.Label(f'Freshest data is from: {list(df.tail(1).index.strftime('%Y-%m-%d %H:%M:%S'))[0]}'), html.Button('PULL NEW DATA FROM API', id='pull_data_button', n_clicks=0), ],style={'flexGrow': 1}),
+html.Div([html.Label(f'Freshest data is from: {list(df.tail(1).index.strftime('%Y-%m-%d %H:%M:%S (%Z)'))[0]}'), html.Button('PULL NEW DATA FROM API', id='pull_data_button', n_clicks=0), ],style={'flexGrow': 1}),
     ], style={'display': 'flex', 'justifyContent': 'space-between', 'padding': '10px'}),
 
     html.Div([
@@ -250,12 +250,16 @@ def update_map(selected_sensors, map_mode, map_style, start_date, end_date, n_cl
                 **common_kwargs,
                 mode='markers',
                 showlegend=True,
+#                opacity=0.1,
                 marker=go.scattermap.Marker(
+
                     size=20,
 #                    colorscale = px.colors.named_colorscales()[i]+'_r', #append _r to the name of the color scale to reverse it
                     colorscale = px.colors.named_colorscales()[i], #append _r to the name of the color scale to reverse it
                     #color=dff_sensor[sensor]
+
                 ),
+
                 text=[
                     f"{sensor}: {v:.2f}<br>{i}"
                     for v, i in zip(dff_sensor[sensor], dff_sensor.index)
